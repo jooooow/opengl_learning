@@ -5,8 +5,10 @@ layout(location = 1) in vec3 color;
 
 out vec3 vertex_color;
 
+uniform vec3 bias;
+
 void main()
 {
-	gl_Position = vec4(position, 1.0);
+	gl_Position = vec4(position + bias, 1.0);
 	vertex_color = color;
 };
