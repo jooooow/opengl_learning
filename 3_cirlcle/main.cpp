@@ -26,7 +26,7 @@ int main(void)
         return -1;
 
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(500, 500, "3_circle", NULL, NULL);
+    window = glfwCreateWindow(500, 500, "5_", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -36,12 +36,16 @@ int main(void)
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
 
+    glfwSwapInterval(1);
+
     /* init glew */
     GLenum err = glewInit();
     if (GLEW_OK != err)
     {
         printf("error : %s\n", glewGetErrorString(err));
     }
+
+    cout << "opengl version : " << glGetString(GL_VERSION) << endl;
 
     vector<float> vertices;
     vertices.push_back(0.0f);
@@ -52,7 +56,7 @@ int main(void)
 
     vector<unsigned int> indices;
 
-    float subdiv = 2.0f;
+    float subdiv = 1.0f;
     float circle_r = 0.8f;
 
     int idx = 1;
@@ -62,7 +66,7 @@ int main(void)
         float y = circle_r * cos(i / 180.0f * PI);
         vertices.push_back(x);
         vertices.push_back(y);
-        
+
         float r, g, b;
         HSV2RGB(i, 100, 100, r, g, b);
 
@@ -103,21 +107,49 @@ int main(void)
     }
     glUseProgram(shader);
 
+
+    int bias = glGetUniformLocation(shader, "bias");
+    int color_rotation = glGetUniformLocation(shader, "color_rotation"); 
+    
+
+    float temp = 0.0f;
+    float acc = 0.0f;
+    int t = 0;
+    float bias_x = 0.0f, bias_y = 0.0f;
+    float bias_r = 0.06f;
+    float bias_f = 0.2f;
+
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
 
+        glUniform1f(color_rotation, temp + t / 10.0);
+        glUniform3f(bias, bias_x, bias_y, 0.0f);
+
         /* draw triangle*/
         //glDrawArrays(GL_TRIANGLES, 0, 3);
         glDrawElements(GL_TRIANGLES, indices_num, GL_UNSIGNED_INT, 0);
+
+        GLenum err;
+        while ((err = glGetError()) != GL_NO_ERROR)
+        {
+            printf("error : 0x%02X\n", err);
+        }
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
 
         /* Poll for and process events */
         glfwPollEvents();
+
+        temp += acc;
+        t += 1;
+        acc = 8 * sin(0.05 * t);
+
+        bias_x = bias_r * sin(bias_f * t);
+        bias_y = bias_r * cos(bias_f * t);
     }
 
     glDeleteProgram(shader);
@@ -145,7 +177,7 @@ void HSV2RGB(int h, int s, int v, float& r, float& g, float& b)
     case 4:R = X, G = 0, B = C; break;
     case 5:R = C, G = 0, B = X; break;
     }
-    
+
     r = R + m;
     g = G + m;
     b = B + m;
